@@ -36,7 +36,7 @@ proj4string(world) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
     
     h2("Where can't I send a postcard?"),
     a("Data via Postcrossing", href="https://www.postcrossing.com/postal-monitor"),
-    leafletOutput("map")
+    leafletOutput('map', height=600, width=900)
     )
   
   server <- function(input, output, session) {
@@ -44,7 +44,7 @@ proj4string(world) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
     output$map <- renderLeaflet({
       leaflet(world) %>% 
         addTiles() %>% 
-        setView(lat=10, lng=0 , zoom=2) %>%
+        setView(lat=20, lng=0 , zoom=2) %>%
         addPolygons( 
           fillColor = world@data$covid_blocked_color, 
           stroke=TRUE, 
