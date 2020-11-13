@@ -25,7 +25,7 @@ country.info.list <- pc.page %>% html_nodes("details")
 
 results <- tibble("send.country" = character(), 
                   "block.num" = numeric(),
-                  "blocked.list" = list())
+                  "blocked.list" = character())
 
 
 for (n in 1:length(country.info.list)) {
@@ -47,22 +47,24 @@ for (n in 1:length(country.info.list)) {
   blocked.vec.clean <- trimws(str_remove_all(blocked.vec, "\\(\\)"))
   # fix so that Ivory Coast -> Côte d'Ivoire (both names were used)
   blocked.vec.clean <- str_replace(blocked.vec.clean,"Ivory Coast", "Côte d'Ivoire")
+  blocked.string <- paste0(blocked.vec.clean, collapse="_")
 
   # save info in tibble
   results <- results %>% add_row(send.country = send.country, 
                                  block.num = as.numeric(as.character(send.country.blocked.num)), 
-                                 blocked.list = list(blocked.vec.clean))
+                                 blocked.list = blocked.string)
 }
 
+# add covid blocked countries to result df
+not.in.frame <- covid.blocked[!covid.blocked %in% results$send.country]
+extra.rows <- data.frame(send.country = not.in.frame, 
+                         block.num = rep(NA, length(not.in.frame)), 
+                         blocked.list = rep(NA, length(not.in.frame)))
+results <- rbind(results, extra.rows)
+results$covid.blocked <- ifelse(results$send.country %in% covid.blocked, "blocked", "sending")
 
-
-
-# how many countries are there in total?
-all.countries <- sort(unique(c(results$send.country, unlist(results$blocked.list), covid.blocked)))
-length(all.countries)
-
-
-
+# export
+write.csv(results, "data/postInfoScrape.csv", fileEncoding = "UTF-8", row.names = FALSE)
 
 
 
