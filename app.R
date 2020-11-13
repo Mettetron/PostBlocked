@@ -31,7 +31,13 @@ proj4string(world) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 
   
-  ui <- fluidPage(leafletOutput("map"))
+  ui <- fluidPage(
+    title = "Where can't I send a postcard?",
+    
+    h2("Where can't I send a postcard?"),
+    a("Data via Postcrossing", href="https://www.postcrossing.com/postal-monitor"),
+    leafletOutput("map")
+    )
   
   server <- function(input, output, session) {
     
