@@ -32,5 +32,35 @@ m <- leaflet(world) %>%
   addPolygons(fillColor = world@data$covid_blocked_color, stroke=FALSE)
 m
 
+# prepare mouseover text
+world@data$covid_blocked_text <- ifelse(is.na(world@data$covid_blocked), "No sending info", 
+                                         ifelse(world@data$covid_blocked == "sending", "Click this country <br/>to see where it <br/>does not send mail",
+                                                "Because of COVID, <br/>this country neither sends <br/>nor receives mail"))
+mytext <- world@data$covid_blocked_text %>%
+  lapply(htmltools::HTML)
 
+# mytext <- paste(
+#   "Country: ", world_spdf@data$NAME,"<br/>", 
+#   "Area: ", world_spdf@data$AREA, "<br/>", 
+#   "Population: ", round(world_spdf@data$POP2005, 2), 
+#   sep="") %>%
+#   lapply(htmltools::HTML)
 
+leaflet(world) %>% 
+  addTiles()  %>% 
+  setView( lat=10, lng=0 , zoom=2) %>%
+  addPolygons( 
+    fillColor = world@data$covid_blocked_color, 
+    stroke=TRUE, 
+    #fillOpacity = 0.9, 
+    color="white", 
+    weight=0.3,
+    label = mytext,
+    labelOptions = labelOptions( 
+      style = list("font-weight" = "normal", padding = "3px 8px"), 
+      textsize = "13px", 
+      direction = "auto"
+    )
+  ) 
+
+m 
