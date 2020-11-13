@@ -14,6 +14,8 @@ updated <- pc.page %>% html_nodes(".last:nth-child(5)") %>% html_text(trim = TRU
 
 # special covid countries which have blocked all in-going and out-going
 covid.blocked <- pc.page %>% html_nodes("#mainContentArea .last a") %>% html_text(trim = TRUE)
+# fix so that Ivory Coast -> Côte d'Ivoire (both names were used)
+covid.blocked <- str_replace(covid.blocked,"Ivory Coast", "Côte d'Ivoire")
 
 # Now I want to collect a list of all the countries they have info about
 # great tool: https://selectorgadget.com/
@@ -33,6 +35,8 @@ for (n in 1:length(country.info.list)) {
   # isolate country name based on it being at the start of the string followed by "([any digit]" 
   last.pos <- str_locate(send.country.line, "\\(\\d")[1]-1
   send.country <- trimws(substr(send.country.line, 1, last.pos))
+  # fix so that Ivory Coast -> Côte d'Ivoire (both names were used)
+  send.country <- str_replace(send.country,"Ivory Coast", "Côte d'Ivoire")
   # might as well get the number of blocked countries while we are at it
   send.country.blocked.num <- substr(send.country.line, last.pos+2, str_locate(send.country.line, "\\)")[1]-1)
   
@@ -41,6 +45,8 @@ for (n in 1:length(country.info.list)) {
   remove.me <- c("\n", "\u274c", "(source)", "Source: Contact at Maldives Post", "Source: Kyrgyz Post, via Messenger.")
   blocked.vec <- trimws(str_remove_all(blocked.vec, paste(remove.me, collapse = "|")))
   blocked.vec.clean <- trimws(str_remove_all(blocked.vec, "\\(\\)"))
+  # fix so that Ivory Coast -> Côte d'Ivoire (both names were used)
+  blocked.vec.clean <- str_replace(blocked.vec.clean,"Ivory Coast", "Côte d'Ivoire")
 
   # save info in tibble
   results <- results %>% add_row(send.country = send.country, 
@@ -49,9 +55,14 @@ for (n in 1:length(country.info.list)) {
 }
 
 
+
+
 # how many countries are there in total?
-all.countries <- sort(unique(c(results$send.country, unlist(results$blocked.list))))
+all.countries <- sort(unique(c(results$send.country, unlist(results$blocked.list), covid.blocked)))
 length(all.countries)
+
+
+
 
 
 
