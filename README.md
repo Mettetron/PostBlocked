@@ -8,7 +8,7 @@
 
 ***Example image:***
 
-![hej](PostBlockedExampleImage.png)
+![hej](data/PostBlockedExampleImage.png)
 
 
 ***Usage - Online***
