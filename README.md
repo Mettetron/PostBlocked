@@ -8,7 +8,7 @@
 
 ***Example image:***
 
-![Clickmap_app](example.png)
+![hej](PostBlockedExampleImage.png)
 
 
 ***Usage - Online***
