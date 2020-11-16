@@ -42,7 +42,7 @@ if (selected.country %in% info.countries) {
 # prepare mouseover text
 world@data$covid_blocked_text <- ifelse(is.na(world@data$covid_blocked), paste0("No sending info<br/>for ", world@data$NAME_NEW), 
                                         ifelse(world@data$covid_blocked == "sending", paste0("Click here to see <br/>where ", world@data$NAME_NEW,  "<br/>does not send mail"),
-                                               paste0("Because of COVID, <br/>", world@data$NAME_NEW, " neither sends <br/>nor receives mail")))
+                                               paste0("Because of COVID, <br/>", world@data$NAME_NEW, " neither sends <br/>nor receives international mail")))
 mytext <- world@data$covid_blocked_text %>%
   lapply(htmltools::HTML)
 
@@ -118,8 +118,8 @@ tag.map.title <- tags$style(HTML("
             textsize = "13px", 
             direction = "auto"
           )
-        ) %>% addLegend(colors=c("green", "yellow", "#cccccc", "#5b0f00", "red"), 
-                        labels=c("Receives mail from selected country", "Selected country", "Information lacking", "COVID blocked", "Blocked by selected country"), 
+        ) %>% addLegend(colors=c("yellow", "green", "red", "#cccccc", "#5b0f00"), 
+                        labels=c("Selected country", "Receives mail from selected country", "Blocked by selected country", "Information lacking", "COVID blocked"), 
                         opacity=0.3, position = "bottomleft")
       
     })
