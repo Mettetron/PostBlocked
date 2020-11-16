@@ -73,18 +73,18 @@ tag.map.title <- tags$style(HTML("
     title = "Where can't I send a postcard?",
     
     h2("Where can't I send a postcard?"),
-    h4("Click the map or use the seach bar to find information about your country of interest"),
-    selectizeInput("searched.country",  # selectizeInput makes writable and searchable dropdown menu
+    h4("Click the map or use the seach bar below it to find information about your country of interest"),
+    leafletOutput('map', height=600, width=1000),
+    fluidRow(
+      column(9,
+             selectizeInput("searched.country",  # selectizeInput makes writable and searchable dropdown menu
                    "Search country",
                    choices = all.countries, 
                    selected = "none searched"
-    ),
-    leafletOutput('map', height=600, width=1000),
-    fluidRow(
-      column(6,
-             a("Data via Postcrossing", href="https://www.postcrossing.com/postal-monitor")
-      ),
-      column(6,
+                   )
+             ),
+      column(3,
+             a("Data via Postcrossing", href="https://www.postcrossing.com/postal-monitor"),
              h6(as.character(pc.data$updated[1]))
       )
     )
