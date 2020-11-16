@@ -173,6 +173,7 @@ tag.map.title <- tags$style(HTML("
           clearGroup('selectedColors') %>%
           clearGroup('initialColors') %>%
           addControl(title, position = "topleft", className="map-title") %>%
+          setView(lat=20, lng=0 , zoom=2) %>%
           addPolygons(data = world, 
                               fillColor = clicked.colors,
                               color = "red",
@@ -227,6 +228,7 @@ tag.map.title <- tags$style(HTML("
         clearGroup('selectedColors') %>%
         clearGroup('initialColors') %>%
         addControl(title, position = "topleft", className="map-title") %>%
+        setView(lat=20, lng=0 , zoom=2) %>%
         addPolygons(data = world, 
                     fillColor = clicked.colors,
                     color = "red",
