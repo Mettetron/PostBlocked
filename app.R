@@ -2,6 +2,7 @@
 library(shiny)
 library(rgdal)
 library(leaflet)
+library(leaflet.extras)
 
 # Read this shape file with the rgdal library. 
 world <- readOGR( 
@@ -13,11 +14,12 @@ world <- readOGR(
 # load postcrossing data
 pc.data <- read.csv("data/postInfoScrape.csv")
 
-# make color based on 
-world@data$covid_blocked <- pc.data$covid.blocked[match(world@data$NAME_NEW, pc.data$send.country)]
-world@data$covid_blocked_color <- ifelse(is.na(world@data$covid_blocked), "white", 
-                                         ifelse(world@data$covid_blocked == "sending", "green", "red"))
 
+## prepare for initial map
+# make color based on covid blocking and wether or not there is sending info
+world@data$covid_blocked <- pc.data$covid.blocked[match(world@data$NAME_NEW, pc.data$send.country)]
+world@data$covid_blocked_color <- ifelse(is.na(world@data$covid_blocked), "#cccccc", 
+                                         ifelse(world@data$covid_blocked == "sending", "cyan", "#5b0f00"))
 
 # prepare mouseover text
 world@data$covid_blocked_text <- ifelse(is.na(world@data$covid_blocked), paste0("No sending info<br/>for ", world@data$NAME_NEW), 
@@ -26,21 +28,43 @@ world@data$covid_blocked_text <- ifelse(is.na(world@data$covid_blocked), paste0(
 mytext <- world@data$covid_blocked_text %>%
   lapply(htmltools::HTML)
 
+
+# prepare variables to be used for coloring later
+covid.blocked.countries <- world@data$NAME_NEW[which(world@data$covid_blocked == "blocked")]
+non.info.countries <- world@data$NAME_NEW[which(is.na(world@data$covid_blocked))]
+info.countries <- world@data$NAME_NEW[which(world@data$covid_blocked == "sending")]
+
 # make sure projection is uniform
 proj4string(world) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
+# to use for chises in searchbar
+all.countries <- c(as.character(world@data$NAME_NEW), "none searched")
 
   
   ui <- fluidPage(
     title = "Where can't I send a postcard?",
     
     h2("Where can't I send a postcard?"),
-    a("Data via Postcrossing", href="https://www.postcrossing.com/postal-monitor"),
-    leafletOutput('map', height=600, width=900)
+    h4("Click the map or use the seach bar to find information about your country of interest"),
+    selectizeInput("searched.country",  # selectizeInput makes writable and searchable dropdown menu
+                   "Search country",
+                   choices = all.countries, 
+                   selected = "none searched"
+    ),
+    leafletOutput('map', height=600, width=1000),
+    fluidRow(
+      column(6,
+             a("Data via Postcrossing", href="https://www.postcrossing.com/postal-monitor")
+      ),
+      column(6,
+             h6(as.character(pc.data$updated[1]))
+      )
+    )
     )
   
   server <- function(input, output, session) {
     
+    # basic start map
     output$map <- renderLeaflet({
       leaflet(world) %>% 
         addTiles() %>% 
@@ -51,16 +75,20 @@ proj4string(world) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
           #fillOpacity = 0.9, 
           color="white", 
           weight=0.3,
-          group = 'B',
+          group = 'initialColors',
           label = mytext,
           labelOptions = labelOptions( 
             style = list("font-weight" = "normal", padding = "3px 8px"), 
             textsize = "13px", 
             direction = "auto"
           )
-        )
+        ) %>% addLegend(colors=c("cyan", "green", "yellow", "#cccccc", "#5b0f00", "red"), 
+                        labels=c("Information available", "Receives mail from selected country", "Selected country", "Information lacking", "COVID blocked", "Blocked by selected country"), 
+                        opacity=0.3, position = "bottomleft")
+      
     })
     
+    # add different map on click
     observeEvent(input$map_shape_click, {
       click <- input$map_shape_click
       
@@ -86,21 +114,29 @@ proj4string(world) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
       clicked.country <- world[point, ]@data$NAME_NEW
       now.blocked.string <- as.character(pc.data[as.character(pc.data$send.country) == as.character(clicked.country), "blocked.list"])
       now.blocked.vec <- unlist(strsplit(now.blocked.string, split="_"))
-      clicked.colors <- ifelse(world@data$NAME_NEW %in% now.blocked.vec, "red", ifelse(world@data$NAME_NEW == clicked.country, "yellow", "green"))
-      #retrieves country in which the click point resides, set CRS for country
-      selected <- world[point, ]
-      proj4string(selected) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+      # make color palette
+      if (clicked.country %in% info.countries) {
+        clicked.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", 
+                                 ifelse(world@data$NAME_NEW %in% now.blocked.vec, "red", 
+                                        ifelse(world@data$NAME_NEW == clicked.country, "yellow", "green")))
+      } else if (clicked.country %in% non.info.countries) {
+        clicked.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00",
+                                 ifelse(world@data$NAME_NEW == clicked.country, "yellow", "#cccccc"))
+      } else if (clicked.country %in% covid.blocked.countries) {
+        clicked.colors <- ifelse(world@data$NAME_NEW == clicked.country, "yellow",
+                                 ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", "red"))
+      }
       
       proxy <- leafletProxy("map")
         proxy %>% 
-          clearGroup('A') %>%
-          clearGroup('B') %>%
+          clearGroup('selectedColors') %>%
+          clearGroup('initialColors') %>%
           addPolygons(data = world, 
                               fillColor = clicked.colors,
                               color = "red",
                               weight = 3, 
                               stroke = F,
-                              group = 'A',
+                              group = 'selectedColors',
                               label = mytext,
                               labelOptions = labelOptions( 
                                 style = list("font-weight" = "normal", padding = "3px 8px"), 
@@ -110,6 +146,56 @@ proj4string(world) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
                               
          )
     })
+    
+    # add different map on search
+    #searched.country <- reactive(input$searched.country)
+    observeEvent(input$searched.country, {
+      searched.country <- input$searched.country
+      
+      if(searched.country == "none searched") {
+        return()
+      } else if (!searched.country %in% all.countries) {
+        return ()
+      }
+           
+      
+      # generate the new colors
+      now.blocked.string <- as.character(pc.data[as.character(pc.data$send.country) == as.character(searched.country), "blocked.list"])
+      now.blocked.vec <- unlist(strsplit(now.blocked.string, split="_"))
+      # make color palette
+      if (searched.country %in% info.countries) {
+        clicked.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", 
+                                 ifelse(world@data$NAME_NEW %in% now.blocked.vec, "red", 
+                                        ifelse(world@data$NAME_NEW == searched.country, "yellow", "green")))
+      } else if (searched.country %in% non.info.countries) {
+        clicked.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00",
+                                        ifelse(world@data$NAME_NEW == searched.country, "yellow", "#cccccc"))
+      } else if (searched.country %in% covid.blocked.countries) {
+        clicked.colors <- ifelse(world@data$NAME_NEW == searched.country, "yellow",
+                                 ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", "red"))
+      }
+      
+
+      proxy <- leafletProxy("map")
+      proxy %>% 
+        clearGroup('selectedColors') %>%
+        clearGroup('initialColors') %>%
+        addPolygons(data = world, 
+                    fillColor = clicked.colors,
+                    color = "red",
+                    weight = 3, 
+                    stroke = F,
+                    group = 'selectedColors',
+                    label = mytext,
+                    labelOptions = labelOptions( 
+                      style = list("font-weight" = "normal", padding = "3px 8px"), 
+                      textsize = "13px", 
+                      direction = "auto"
+                    )
+        )
+    })
+    
+    
   }
 
 shinyApp(ui, server)

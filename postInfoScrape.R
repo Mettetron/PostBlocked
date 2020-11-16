@@ -8,10 +8,6 @@ library(tidyverse)
 library(rvest)
 pc.page <- read_html("https://www.postcrossing.com/postal-monitor")
 
-# get date of update
-updated <- pc.page %>% html_nodes(".last:nth-child(5)") %>% html_text(trim = TRUE)
-
-
 # special covid countries which have blocked all in-going and out-going
 covid.blocked <- pc.page %>% html_nodes("#mainContentArea .last a") %>% html_text(trim = TRUE)
 # fix so that Ivory Coast -> Côte d'Ivoire (both names were used)
@@ -63,6 +59,9 @@ extra.rows <- data.frame(send.country = not.in.frame,
 results <- rbind(results, extra.rows)
 results$covid.blocked <- ifelse(results$send.country %in% covid.blocked, "blocked", "sending")
 
+# get date of update
+updated <- pc.page %>% html_nodes(".last:nth-child(5)") %>% html_text(trim = TRUE)
+results$updated <- updated 
 # export
 write.csv(results, "data/postInfoScrape.csv", fileEncoding = "UTF-8", row.names = FALSE)
 
