@@ -1,5 +1,7 @@
 # idea: make R shiny interactive map over mail suspension alerts, based on info collected by postcrossing
 library(tidyverse)
+library(rvest)
+library(rgdal)
 ######## step 1 get info ###########
 # Webscraping https://towardsdatascience.com/web-scraping-tutorial-in-r-5e71fd107f32
 
@@ -62,6 +64,29 @@ results$covid.blocked <- ifelse(results$send.country %in% covid.blocked, "blocke
 # get date of update
 updated <- pc.page %>% html_nodes(".last:nth-child(5)") %>% html_text(trim = TRUE)
 results$updated <- updated 
+
+## check that country names match current map names
+# pack out the blocked countries
+bc <- c()
+for (n in 1:nrow(results)){
+  b <- unlist(strsplit(as.character(results$blocked.list[n]), split="_"))
+  bc <- c(bc, b)
+}
+all.countries <- sort(unique(c(as.character(results$send.country), bc)))
+
+# read shapefile
+world <- readOGR( 
+  dsn= paste0(getwd(),"/data/ne_50m_admin_0_countries_namenew/") , 
+  layer="ne_50m_admin_0_countries_namenew",
+  verbose=FALSE
+)
+
+# check that the country names still match
+accepted.exceptions <- c("Bonaire, Sint Eustatius and Saba", "Cape Verde", "Christmas Island", 
+                         "French Guiana", "Gibraltar", "Guadeloupe", "Martinique", "Mayotte", "Réunion", 
+                         "Svalbard and Jan Mayen","Tokelau", "Tuvalu","U.S. Minor Outlying Islands")
+sum(all.countries[!all.countries %in% world@data$NAME_NEW] %in% accepted.exceptions) == length(accepted.exceptions)
+
 # export
 write.csv(results, "data/postInfoScrape.csv", fileEncoding = "UTF-8", row.names = FALSE)
 
