@@ -2,7 +2,6 @@
 library(shiny)
 library(rgdal)
 library(leaflet)
-#library(leaflet.extras)
 
 # read in the map shapefile using the rgdal package. 
 world <- readOGR( 
@@ -13,7 +12,6 @@ world <- readOGR(
 
 # load postcrossing data
 pc.data <- read.csv("data/postInfoScrape.csv")
-
 
 ## prepare for initial map
 # make color based on covid blocking and wether or not there is sending info
