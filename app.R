@@ -2,18 +2,18 @@
 library(shiny)
 library(rgdal)
 library(leaflet)
-library(rgeolocate)
-geolocatefile <- system.file("extdata","ip2_sample.bin", package = "rgeolocate")
+# library(rgeolocate)
+# geolocatefile <- system.file("extdata","ip2_sample.bin", package = "rgeolocate")
 
 # read in the map shapefile using the rgdal package. 
 world <- readOGR( 
-  dsn= paste0(getwd(),"/data/ne_50m_admin_0_countries_namenew/") , 
+  dsn= paste0(getwd(),"/data_publish/ne_50m_admin_0_countries_namenew/") , 
   layer="ne_50m_admin_0_countries_namenew",
   verbose=FALSE
 )
 
 # load postcrossing data
-pc.data <- read.csv("data/postInfoScrape.csv")
+pc.data <- read.csv("data_publish/postInfoScrape.csv")
 
 ## prepare for initial map
 # prepare variables to be used for coloring later
@@ -54,22 +54,18 @@ tag.map.title <- tags$style(HTML("
   
   ui <- fluidPage(
     
-    # get IP address - hidden text field
-    div(style = "display: none;",
-        textInput("remote_addr", "remote_addr",
-                  if (!is.null(req[["HTTP_X_FORWARDED_FOR"]]))
-                    req[["HTTP_X_FORWARDED_FOR"]]
-                  else
-                    req[["REMOTE_ADDR"]]
-        )
+    # get IP address - diff method
+    tags$head(
+      tags$script(src="getIP.js")
     ),
     
     title = "Where can't I send a postcard?",
     
     h2("Where can't I send a postcard?"),
     h4("Click the map or use the seach bar below it to find information about your country of interest"),
+    
     leafletOutput('map', height=600, width=1000),
-    # tags$head(tags$script(src="getIP.js")),  # attempt to get IP, not used
+    
     fluidRow(
       column(9,
              selectizeInput("searched.country",  # selectizeInput makes writable and searchable dropdown menu
@@ -88,16 +84,14 @@ tag.map.title <- tags$style(HTML("
   server <- function(input, output, session) {
     
     # get ip
-    user.ip <- isolate(input$remote_addr)
-    # if ip available, use as start country, else use Germany
-    if (!is.null(user.ip)) {
-      # translate ip to country code
-      user.code <- ip2location(user.ip, geolocatefile, c("country_code"))
-      # translate country code to country name
-      selected.country <- world@data$NAME_NEW[match(user.code, world@data$ISO_A2)]
-    } else {
-      selected.country <- "Germany"
-    }
+    IP <- reactive({ input$getIP })
+    
+    observe({
+      cat(capture.output(str(IP()), split=TRUE))
+    })
+    
+
+    selected.country <- "Germany"
 
     # fix colors on start map to sfit with start country
     now.blocked.string <- as.character(pc.data[as.character(pc.data$send.country) == as.character(selected.country), "blocked.list"])
