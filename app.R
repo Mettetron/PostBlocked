@@ -3,7 +3,6 @@ library(shiny)
 library(rgdal)
 library(leaflet)
 
-
 # read in the map shapefile using the rgdal package. 
 world <- readOGR( 
   dsn= paste0(getwd(),"/data_publish/ne_50m_admin_0_countries_namenew/") , 
@@ -35,8 +34,9 @@ proj4string(world) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 all.countries <- c(as.character(world@data$NAME_NEW), "none searched")
 
 ## preparing for map title
-# this way of adding a map title is a little hacky - it's really only covering up the old title, and it gets messy if very long names are selected.
-#current.country <- selected.country
+# this way of adding a map title is a little hacky - it's really only covering up the old title, 
+# and it gets messy if very long names are selected.
+
 tag.map.title <- tags$style(HTML("
   .leaflet-control.map-title { 
     transform: translate(-50%,20%);
@@ -57,9 +57,7 @@ tag.map.title <- tags$style(HTML("
     
     h2("Where can't I send a postcard?"),
     h4("Click the map or use the seach bar below it to find information about your country of interest"),
-    
-    leafletOutput('map', height=600, width=1000),
-    
+    leafletOutput('map', height=600),
     fluidRow(
       column(9,
              selectizeInput("searched.country",  # selectizeInput makes writable and searchable dropdown menu
@@ -80,7 +78,7 @@ tag.map.title <- tags$style(HTML("
     # use Germany as initial country
     selected.country <- "Germany"
 
-    # fix colors on start map to sfit with start country
+    # fix colors on start map to fit with start country
     now.blocked.string <- as.character(pc.data[as.character(pc.data$send.country) == as.character(selected.country), "blocked.list"])
     now.blocked.vec <- unlist(strsplit(now.blocked.string, split="_"))
     # make color palette
@@ -95,8 +93,6 @@ tag.map.title <- tags$style(HTML("
       map.colors <- ifelse(world@data$NAME_NEW == selected.country, "yellow",
                            ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", "red"))
     }
-    
-    
     
     # map title depending on selected country
     map.title <- paste0("Selected: ", selected.country)
