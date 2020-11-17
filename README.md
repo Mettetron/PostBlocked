@@ -2,9 +2,9 @@
 
 > PostBlocked is an interactive shiny app that shows the status of international mail in the time of COVID.
 
-> All data used in in PostBlocked is collected by the nice people of [Postcrossing](https://postcrossing.com) and can be accessed directly on their site [here](https://www.postcrossing.com/postal-monitor).
+> All data used in PostBlocked is collected by the nice people of [Postcrossing](https://postcrossing.com) and can be accessed directly on their site [here](https://www.postcrossing.com/postal-monitor).
 
-> This repo also contains several helping scripts that were used to perpare data for the app, but are not needed for it to run
+> This repo also contains several helping scripts that were used to prepare data for the app, but are not needed for it to run
 
 ***Example image:***
 
