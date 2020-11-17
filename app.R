@@ -2,6 +2,8 @@
 library(shiny)
 library(rgdal)
 library(leaflet)
+library(rgeolocate)
+geolocatefile <- system.file("extdata","ip2_sample.bin", package = "rgeolocate")
 
 # read in the map shapefile using the rgdal package. 
 world <- readOGR( 
@@ -14,29 +16,12 @@ world <- readOGR(
 pc.data <- read.csv("data/postInfoScrape.csv")
 
 ## prepare for initial map
-# make color based on covid blocking and wether or not there is sending info
-world@data$covid_blocked <- pc.data$covid.blocked[match(world@data$NAME_NEW, pc.data$send.country)]
 # prepare variables to be used for coloring later
+world@data$covid_blocked <- pc.data$covid.blocked[match(world@data$NAME_NEW, pc.data$send.country)]
 covid.blocked.countries <- world@data$NAME_NEW[which(world@data$covid_blocked == "blocked")]
 non.info.countries <- world@data$NAME_NEW[which(is.na(world@data$covid_blocked))]
 info.countries <- world@data$NAME_NEW[which(world@data$covid_blocked == "sending")]
 
-# fix colors on start map to show Germany selected
-selected.country <- "Germany"
-now.blocked.string <- as.character(pc.data[as.character(pc.data$send.country) == as.character(selected.country), "blocked.list"])
-now.blocked.vec <- unlist(strsplit(now.blocked.string, split="_"))
-# make color palette
-if (selected.country %in% info.countries) {
-  map.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", 
-                           ifelse(world@data$NAME_NEW %in% now.blocked.vec, "red", 
-                                  ifelse(world@data$NAME_NEW == selected.country, "yellow", "green")))
-} else if (selected.country %in% non.info.countries) {
-  map.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00",
-                           ifelse(world@data$NAME_NEW == selected.country, "yellow", "#cccccc"))
-} else if (clicked.country %in% covid.blocked.countries) {
-  map.colors <- ifelse(world@data$NAME_NEW == selected.country, "yellow",
-                           ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", "red"))
-}
 # prepare mouseover text
 world@data$covid_blocked_text <- ifelse(is.na(world@data$covid_blocked), paste0("No sending info<br/>for ", world@data$NAME_NEW), 
                                         ifelse(world@data$covid_blocked == "sending", paste0("Click here to see <br/>where ", world@data$NAME_NEW,  "<br/>does not send mail"),
@@ -52,7 +37,7 @@ all.countries <- c(as.character(world@data$NAME_NEW), "none searched")
 
 ## preparing for map title
 # this way of adding a map title is a little hacky - it's really only covering up the old title, and it gets messy if very long names are selected.
-current.country <- selected.country
+#current.country <- selected.country
 tag.map.title <- tags$style(HTML("
   .leaflet-control.map-title { 
     transform: translate(-50%,20%);
@@ -68,11 +53,23 @@ tag.map.title <- tags$style(HTML("
 "))
   
   ui <- fluidPage(
+    
+    # get IP address - hidden text field
+    div(style = "display: none;",
+        textInput("remote_addr", "remote_addr",
+                  if (!is.null(req[["HTTP_X_FORWARDED_FOR"]]))
+                    req[["HTTP_X_FORWARDED_FOR"]]
+                  else
+                    req[["REMOTE_ADDR"]]
+        )
+    ),
+    
     title = "Where can't I send a postcard?",
     
     h2("Where can't I send a postcard?"),
     h4("Click the map or use the seach bar below it to find information about your country of interest"),
     leafletOutput('map', height=600, width=1000),
+    # tags$head(tags$script(src="getIP.js")),  # attempt to get IP, not used
     fluidRow(
       column(9,
              selectizeInput("searched.country",  # selectizeInput makes writable and searchable dropdown menu
@@ -90,8 +87,38 @@ tag.map.title <- tags$style(HTML("
   
   server <- function(input, output, session) {
     
+    # get ip
+    user.ip <- isolate(input$remote_addr)
+    # if ip available, use as start country, else use Germany
+    if (!is.null(user.ip)) {
+      # translate ip to country code
+      user.code <- ip2location(user.ip, geolocatefile, c("country_code"))
+      # translate country code to country name
+      selected.country <- world@data$NAME_NEW[match(user.code, world@data$ISO_A2)]
+    } else {
+      selected.country <- "Germany"
+    }
+
+    # fix colors on start map to sfit with start country
+    now.blocked.string <- as.character(pc.data[as.character(pc.data$send.country) == as.character(selected.country), "blocked.list"])
+    now.blocked.vec <- unlist(strsplit(now.blocked.string, split="_"))
+    # make color palette
+    if (selected.country %in% info.countries) {
+      map.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", 
+                           ifelse(world@data$NAME_NEW %in% now.blocked.vec, "red", 
+                                  ifelse(world@data$NAME_NEW == selected.country, "yellow", "green")))
+    } else if (selected.country %in% non.info.countries) {
+      map.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00",
+                           ifelse(world@data$NAME_NEW == selected.country, "yellow", "#cccccc"))
+    } else if (clicked.country %in% covid.blocked.countries) {
+      map.colors <- ifelse(world@data$NAME_NEW == selected.country, "yellow",
+                           ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", "red"))
+    }
+    
+    
+    
     # map title depending on selected country
-    map.title <- paste0("Selected: ", current.country)
+    map.title <- paste0("Selected: ", selected.country)
 
     title <- tags$div(
       tag.map.title, HTML(map.title)
@@ -132,10 +159,6 @@ tag.map.title <- tags$style(HTML("
       #pulls lat and lon from shiny click event
       lat <- click$lat
       lon <- click$lng
-      #print(lat)
-      #print(lon)
-      #lat <- 55.08815
-      #lon <-  9.190774
       
       #puts lat and lon for click point into its own data frame
       coords <- as.data.frame(cbind(lon, lat))
