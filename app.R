@@ -2,8 +2,7 @@
 library(shiny)
 library(rgdal)
 library(leaflet)
-# library(rgeolocate)
-# geolocatefile <- system.file("extdata","ip2_sample.bin", package = "rgeolocate")
+
 
 # read in the map shapefile using the rgdal package. 
 world <- readOGR( 
@@ -54,11 +53,6 @@ tag.map.title <- tags$style(HTML("
   
   ui <- fluidPage(
     
-    # get IP address - diff method
-    tags$head(
-      tags$script(src="getIP.js")
-    ),
-    
     title = "Where can't I send a postcard?",
     
     h2("Where can't I send a postcard?"),
@@ -83,14 +77,7 @@ tag.map.title <- tags$style(HTML("
   
   server <- function(input, output, session) {
     
-    # get ip
-    IP <- reactive({ input$getIP })
-    
-    observe({
-      cat(capture.output(str(IP()), split=TRUE))
-    })
-    
-
+    # use Germany as initial country
     selected.country <- "Germany"
 
     # fix colors on start map to sfit with start country
