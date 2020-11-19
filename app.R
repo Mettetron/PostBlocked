@@ -115,7 +115,7 @@ all.countries <- c(as.character(world@data$NAME_NEW), "none searched")
         proj4string(point) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
         selected.country <- world[point, ]@data$NAME_NEW
         output$country <- renderText({ 
-          paste(selected.country)
+          paste0("Where can't I send a postcard from ", selected.country, "?")
         })
       } else {
         selected.country <- "Germany"  # else use Germany as start country
