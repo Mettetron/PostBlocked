@@ -40,8 +40,8 @@ all.countries <- c(as.character(world@data$NAME_NEW), "none searched")
 tag.map.title <- tags$style(HTML("
   .leaflet-control.map-title { 
     transform: translate(-50%,20%);
-    position: fixed !important;
     left: 50%;
+    position: fixed !important;
     text-align: center;
     padding-left: 100px; 
     padding-right: 100px; 
@@ -70,39 +70,74 @@ tag.map.title <- tags$style(HTML("
              a("Data via Postcrossing", href="https://www.postcrossing.com/postal-monitor"),
              h6(as.character(pc.data$updated[1]))
       )
+    ),
+    # for user geolocation (with prompt) https://github.com/AugustT/shiny_geolocation
+    tags$script('
+      $(document).ready(function () {
+        navigator.geolocation.getCurrentPosition(onSuccess, onError);
+              
+        function onError (err) {
+          Shiny.onInputChange("geolocation", false);
+        }
+              
+        function onSuccess (position) {
+          setTimeout(function () {
+            var coords = position.coords;
+            console.log(coords.latitude + ", " + coords.longitude);
+            Shiny.onInputChange("geolocation", true);
+            Shiny.onInputChange("lat", coords.latitude);
+            Shiny.onInputChange("long", coords.longitude);
+          }, 1100)
+        }
+      });
+              '),
+    # Show a plot of the generated distribution
+    fluidRow(column(width = 2,
+                    verbatimTextOutput("lat"),
+                    verbatimTextOutput("long"),
+                    verbatimTextOutput("geolocation"))
     )
     )
   
   server <- function(input, output, session) {
     
-    # use Germany as initial country
-    selected.country <- "Germany"
-
-    # fix colors on start map to fit with start country
-    now.blocked.string <- as.character(pc.data[as.character(pc.data$send.country) == as.character(selected.country), "blocked.list"])
-    now.blocked.vec <- unlist(strsplit(now.blocked.string, split="_"))
-    # make color palette
-    if (selected.country %in% info.countries) {
-      map.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", 
-                           ifelse(world@data$NAME_NEW %in% now.blocked.vec, "red", 
-                                  ifelse(world@data$NAME_NEW == selected.country, "yellow", "green")))
-    } else if (selected.country %in% non.info.countries) {
-      map.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00",
-                           ifelse(world@data$NAME_NEW == selected.country, "yellow", "#cccccc"))
-    } else if (clicked.country %in% covid.blocked.countries) {
-      map.colors <- ifelse(world@data$NAME_NEW == selected.country, "yellow",
-                           ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", "red"))
-    }
-    
-    # map title depending on selected country
-    map.title <- paste0("Selected: ", selected.country)
-
-    title <- tags$div(
-      tag.map.title, HTML(map.title)
-    ) 
-    
     # basic start map
     output$map <- renderLeaflet({
+      
+      # if user has allowed geolocation, use that to select start country
+      if (!is.null(input$lat)){
+        lat <- input$lat
+        lon <- input$long
+        coords <- as.data.frame(cbind(lon, lat))
+        point <- SpatialPoints(coords)
+        proj4string(point) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+        selected.country <- world[point, ]@data$NAME_NEW
+      } else {
+        selected.country <- "Germany"  # else use Germany as start country
+      }
+
+      # fix colors on start map to fit with start country
+      now.blocked.string <- as.character(pc.data[as.character(pc.data$send.country) == as.character(selected.country), "blocked.list"])
+      now.blocked.vec <- unlist(strsplit(now.blocked.string, split="_"))
+      # make color palette
+      if (selected.country %in% info.countries) {
+        map.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", 
+                             ifelse(world@data$NAME_NEW %in% now.blocked.vec, "red", 
+                                    ifelse(world@data$NAME_NEW == selected.country, "yellow", "green")))
+      } else if (selected.country %in% non.info.countries) {
+        map.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00",
+                             ifelse(world@data$NAME_NEW == selected.country, "yellow", "#cccccc"))
+      } else if (clicked.country %in% covid.blocked.countries) {
+        map.colors <- ifelse(world@data$NAME_NEW == selected.country, "yellow",
+                             ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", "red"))
+      }
+      
+      # map title depending on selected country
+      map.title <- paste0("Selected: ", selected.country)
+      
+      title <- tags$div(
+        tag.map.title, HTML(map.title)
+      ) 
       leaflet(world) %>% 
         addTiles() %>% 
         addControl(title, position = "topleft", className="map-title") %>%
