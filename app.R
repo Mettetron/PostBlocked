@@ -59,7 +59,7 @@ all.countries <- c(as.character(world@data$NAME_NEW), "none searched")
     title = "Where can't I send a postcard?",
     
     h2(textOutput("country")),
-    h4("Click the map or use the seach bar below it to find information about your country of interest"),
+    h4("Click the map or use the seach bar to find information about your country of interest"),
     fluidRow(
       column(9,
              leafletOutput('map', height=600)
@@ -72,12 +72,12 @@ all.countries <- c(as.character(world@data$NAME_NEW), "none searched")
              )
              )
     ),
-    fluidRow(align = "center", h6("Data collected by")
+    fluidRow(column(9, align = "center", h6("Data collected by"))
     ),
-    fluidRow(align = "center", HTML('<p><a href="https://www.postcrossing.com/postal-monitor">
-                  <img src="PClogo.png" width="282" height="36" /></a></p>')
+    fluidRow(column(9,align = "center", HTML('<p><a href="https://www.postcrossing.com/postal-monitor">
+                  <img src="PClogo.png" width="282" height="36" /></a></p>'))
     ),
-    fluidRow(align = "center", h6(as.character(pc.data$updated[1]))
+    fluidRow(column(9,align = "center", h6(as.character(pc.data$updated[1])))
     ),
     # for user geolocation (with prompt) https://github.com/AugustT/shiny_geolocation
     tags$script('
