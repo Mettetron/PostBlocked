@@ -53,30 +53,12 @@ proj4string(world) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 # to use for countries in searchbar
 all.countries <- c(as.character(world@data$NAME_NEW), "none searched")
-
-## preparing for map title
-# this way of adding a map title is a little hacky - it's really only covering up the old title, 
-# and it gets messy if very long names are selected.
-
-tag.map.title <- tags$style(HTML("
-  .leaflet-control.map-title { 
-    transform: translate(-50%,20%);
-    left: 50%;
-    position: fixed !important;
-    text-align: center;
-    padding-left: 100px; 
-    padding-right: 100px; 
-    background: rgba(255,255,255,1);
-    font-weight: bold;
-    font-size: 16px;
-  }
-"))
   
   ui <- fluidPage(
     
     title = "Where can't I send a postcard?",
     
-    h2("Where can't I send a postcard?"),
+    h2(textOutput("country")),
     h4("Click the map or use the seach bar below it to find information about your country of interest"),
     fluidRow(
       column(9,
@@ -132,17 +114,19 @@ tag.map.title <- tags$style(HTML("
         point <- SpatialPoints(coords)
         proj4string(point) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
         selected.country <- world[point, ]@data$NAME_NEW
+        output$country <- renderText({ 
+          paste(selected.country)
+        })
       } else {
         selected.country <- "Germany"  # else use Germany as start country
+        output$country <- renderText({ 
+          paste0("Where can't I send a postcard from ", selected.country, "?")
+        })
       }
-
-      # prepare title
-      map.title <- tags$div(tag.map.title, HTML(paste0("Selected: ", selected.country))) 
       
       # plot
       leaflet(world) %>% 
         addTiles() %>% 
-        addControl(map.title, position = "topleft", className="map-title") %>%
         setView(lat=20, lng=0 , zoom=2) %>%
         addPolygons( 
           fillColor = mapColPrep(selected.country), 
@@ -180,14 +164,14 @@ tag.map.title <- tags$style(HTML("
       
       selected.country <- world[point, ]@data$NAME_NEW
       
-      # prepare title
-      map.title <- tags$div(tag.map.title, HTML(paste0("Selected: ", selected.country))) 
+      output$country <- renderText({ 
+        paste0("Where can't I send a postcard from ", selected.country, "?")
+      })
       
       proxy <- leafletProxy("map")
         proxy %>% 
           clearGroup('selectedColors') %>%
           clearGroup('initialColors') %>%
-          addControl(map.title, position = "topleft", className="map-title") %>%
           setView(lat=20, lng=0 , zoom=2) %>%
           addPolygons(data = world, 
                               fillColor = mapColPrep(selected.country),
@@ -214,15 +198,15 @@ tag.map.title <- tags$style(HTML("
         return ()
       }
       
-      # prepare title
-      map.title <- tags$div(tag.map.title, HTML(paste0("Selected: ", selected.country))) 
+      output$country <- renderText({ 
+        paste0("Where can't I send a postcard from ", selected.country, "?")
+      })
       
       # plot
       proxy <- leafletProxy("map")
       proxy %>% 
         clearGroup('selectedColors') %>%
         clearGroup('initialColors') %>%
-        addControl(map.title, position = "topleft", className="map-title") %>%
         setView(lat=20, lng=0 , zoom=2) %>%
         addPolygons(data = world, 
                     fillColor = mapColPrep(selected.country),
