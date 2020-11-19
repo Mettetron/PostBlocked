@@ -86,11 +86,14 @@ tag.map.title <- tags$style(HTML("
                    choices = all.countries, 
                    selected = "none searched"
                    )
-             ),
-      column(3,
-             a("Data via Postcrossing", href="https://www.postcrossing.com/postal-monitor"),
-             h6(as.character(pc.data$updated[1]))
-      )
+             )
+    ),
+    fluidRow(align = "center", h6("Data from")
+    ),
+    fluidRow(align = "center", HTML('<p><a href="https://www.postcrossing.com/postal-monitor">
+                  <img src="PClogo.png" width="282" height="36" /></a></p>')
+    ),
+    fluidRow(align = "center", h6(as.character(pc.data$updated[1]))
     ),
     # for user geolocation (with prompt) https://github.com/AugustT/shiny_geolocation
     tags$script('
@@ -111,13 +114,7 @@ tag.map.title <- tags$style(HTML("
           }, 1100)
         }
       });
-              '),
-    # Show a plot of the generated distribution
-    fluidRow(column(width = 2,
-                    verbatimTextOutput("lat"),
-                    verbatimTextOutput("long"),
-                    verbatimTextOutput("geolocation"))
-    )
+              ')
     )
   
   server <- function(input, output, session) {
