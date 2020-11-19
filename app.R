@@ -78,17 +78,19 @@ tag.map.title <- tags$style(HTML("
     
     h2("Where can't I send a postcard?"),
     h4("Click the map or use the seach bar below it to find information about your country of interest"),
-    leafletOutput('map', height=600),
     fluidRow(
       column(9,
+             leafletOutput('map', height=600)
+             ),
+      column(3,
              selectizeInput("searched.country",  # selectizeInput makes writable and searchable dropdown menu
-                   "Search country",
-                   choices = all.countries, 
-                   selected = "none searched"
-                   )
+                            "Search country",
+                            choices = all.countries, 
+                            selected = "none searched"
+             )
              )
     ),
-    fluidRow(align = "center", h6("Data from")
+    fluidRow(align = "center", h6("Data collected by")
     ),
     fluidRow(align = "center", HTML('<p><a href="https://www.postcrossing.com/postal-monitor">
                   <img src="PClogo.png" width="282" height="36" /></a></p>')
