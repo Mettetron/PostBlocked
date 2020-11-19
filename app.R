@@ -14,11 +14,32 @@ world <- readOGR(
 pc.data <- read.csv("data_publish/postInfoScrape.csv")
 
 ## prepare for initial map
-# prepare variables to be used for coloring later
+# prepare variables to be used for coloring 
 world@data$covid_blocked <- pc.data$covid.blocked[match(world@data$NAME_NEW, pc.data$send.country)]
 covid.blocked.countries <- world@data$NAME_NEW[which(world@data$covid_blocked == "blocked")]
 non.info.countries <- world@data$NAME_NEW[which(is.na(world@data$covid_blocked))]
 info.countries <- world@data$NAME_NEW[which(world@data$covid_blocked == "sending")]
+
+# map color function
+mapColPrep <- function(my.country) {
+  # find blocked countries 
+  now.blocked.string <- as.character(pc.data[as.character(pc.data$send.country) == as.character(my.country), "blocked.list"])
+  now.blocked.vec <- unlist(strsplit(now.blocked.string, split="_"))
+  # make color palette
+  if (my.country %in% info.countries) {
+    my.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", 
+                        ifelse(world@data$NAME_NEW %in% now.blocked.vec, "red", 
+                               ifelse(world@data$NAME_NEW == my.country, "yellow", "green")))
+  } else if (my.country %in% non.info.countries) {
+    my.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00",
+                        ifelse(world@data$NAME_NEW == my.country, "yellow", "#cccccc"))
+  } else if (clicked.country %in% covid.blocked.countries) {
+    my.colors <- ifelse(world@data$NAME_NEW == my.country, "yellow",
+                        ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", "red"))
+  }
+  
+  return(my.colors)
+}
 
 # prepare mouseover text
 world@data$covid_blocked_text <- ifelse(is.na(world@data$covid_blocked), paste0("No sending info<br/>for ", world@data$NAME_NEW), 
@@ -116,38 +137,17 @@ tag.map.title <- tags$style(HTML("
         selected.country <- "Germany"  # else use Germany as start country
       }
 
-      # fix colors on start map to fit with start country
-      now.blocked.string <- as.character(pc.data[as.character(pc.data$send.country) == as.character(selected.country), "blocked.list"])
-      now.blocked.vec <- unlist(strsplit(now.blocked.string, split="_"))
-      # make color palette
-      if (selected.country %in% info.countries) {
-        map.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", 
-                             ifelse(world@data$NAME_NEW %in% now.blocked.vec, "red", 
-                                    ifelse(world@data$NAME_NEW == selected.country, "yellow", "green")))
-      } else if (selected.country %in% non.info.countries) {
-        map.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00",
-                             ifelse(world@data$NAME_NEW == selected.country, "yellow", "#cccccc"))
-      } else if (clicked.country %in% covid.blocked.countries) {
-        map.colors <- ifelse(world@data$NAME_NEW == selected.country, "yellow",
-                             ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", "red"))
-      }
+      # prepare title
+      map.title <- tags$div(tag.map.title, HTML(paste0("Selected: ", selected.country))) 
       
-      # map title depending on selected country
-      map.title <- paste0("Selected: ", selected.country)
-      
-      title <- tags$div(
-        tag.map.title, HTML(map.title)
-      ) 
+      # plot
       leaflet(world) %>% 
         addTiles() %>% 
-        addControl(title, position = "topleft", className="map-title") %>%
+        addControl(map.title, position = "topleft", className="map-title") %>%
         setView(lat=20, lng=0 , zoom=2) %>%
         addPolygons( 
-          fillColor = map.colors, 
-          stroke=TRUE, 
-          #fillOpacity = 0.9, 
-          color="white", 
-          weight=0.3,
+          fillColor = mapColPrep(selected.country), 
+          stroke = F, 
           group = 'initialColors',
           label = mytext,
           labelOptions = labelOptions( 
@@ -161,7 +161,7 @@ tag.map.title <- tags$style(HTML("
       
     })
     
-    # add different map on click
+    ## add different map on click
     observeEvent(input$map_shape_click, {
       click <- input$map_shape_click
       
@@ -179,38 +179,19 @@ tag.map.title <- tags$style(HTML("
       point <- SpatialPoints(coords)
       proj4string(point) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
       
-      # find blocked countries based on clicked country
-      clicked.country <- world[point, ]@data$NAME_NEW
-      now.blocked.string <- as.character(pc.data[as.character(pc.data$send.country) == as.character(clicked.country), "blocked.list"])
-      now.blocked.vec <- unlist(strsplit(now.blocked.string, split="_"))
-      # make color palette
-      if (clicked.country %in% info.countries) {
-        clicked.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", 
-                                 ifelse(world@data$NAME_NEW %in% now.blocked.vec, "red", 
-                                        ifelse(world@data$NAME_NEW == clicked.country, "yellow", "green")))
-      } else if (clicked.country %in% non.info.countries) {
-        clicked.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00",
-                                 ifelse(world@data$NAME_NEW == clicked.country, "yellow", "#cccccc"))
-      } else if (clicked.country %in% covid.blocked.countries) {
-        clicked.colors <- ifelse(world@data$NAME_NEW == clicked.country, "yellow",
-                                 ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", "red"))
-      }
-      # prepare title
-      current.country <- clicked.country
-      map.title <- paste0("Selected: ", current.country)
+      selected.country <- world[point, ]@data$NAME_NEW
       
-      title <- tags$div(
-        tag.map.title, HTML(map.title)
-      ) 
+      # prepare title
+      map.title <- tags$div(tag.map.title, HTML(paste0("Selected: ", selected.country))) 
       
       proxy <- leafletProxy("map")
         proxy %>% 
           clearGroup('selectedColors') %>%
           clearGroup('initialColors') %>%
-          addControl(title, position = "topleft", className="map-title") %>%
+          addControl(map.title, position = "topleft", className="map-title") %>%
           setView(lat=20, lng=0 , zoom=2) %>%
           addPolygons(data = world, 
-                              fillColor = clicked.colors,
+                              fillColor = mapColPrep(selected.country),
                               color = "red",
                               weight = 3, 
                               stroke = F,
@@ -221,53 +202,31 @@ tag.map.title <- tags$style(HTML("
                                 textsize = "13px", 
                                 direction = "auto"
                               )
-                              
          )
     })
     
-    # add different map on search
+    ## add different map on search
     observeEvent(input$searched.country, {
-      searched.country <- input$searched.country
+      selected.country <- input$searched.country
       
-      if(searched.country == "none searched") {
+      if(selected.country == "none searched") {
         return()
-      } else if (!searched.country %in% all.countries) {
+      } else if (!selected.country %in% all.countries) {
         return ()
       }
-           
-      current.country <- searched.country
-      # generate the new colors
-      now.blocked.string <- as.character(pc.data[as.character(pc.data$send.country) == as.character(searched.country), "blocked.list"])
-      now.blocked.vec <- unlist(strsplit(now.blocked.string, split="_"))
-      # make color palette
-      if (searched.country %in% info.countries) {
-        clicked.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", 
-                                 ifelse(world@data$NAME_NEW %in% now.blocked.vec, "red", 
-                                        ifelse(world@data$NAME_NEW == searched.country, "yellow", "green")))
-      } else if (searched.country %in% non.info.countries) {
-        clicked.colors <- ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00",
-                                        ifelse(world@data$NAME_NEW == searched.country, "yellow", "#cccccc"))
-      } else if (searched.country %in% covid.blocked.countries) {
-        clicked.colors <- ifelse(world@data$NAME_NEW == searched.country, "yellow",
-                                 ifelse(world@data$NAME_NEW %in% covid.blocked.countries, "#5b0f00", "red"))
-      }
-      current.country <- searched.country
-      map.title <- paste0("Selected: ", current.country)
       
-      title <- tags$div(
-        tag.map.title, HTML(map.title)
-      ) 
-
+      # prepare title
+      map.title <- tags$div(tag.map.title, HTML(paste0("Selected: ", selected.country))) 
+      
+      # plot
       proxy <- leafletProxy("map")
       proxy %>% 
         clearGroup('selectedColors') %>%
         clearGroup('initialColors') %>%
-        addControl(title, position = "topleft", className="map-title") %>%
+        addControl(map.title, position = "topleft", className="map-title") %>%
         setView(lat=20, lng=0 , zoom=2) %>%
         addPolygons(data = world, 
-                    fillColor = clicked.colors,
-                    color = "red",
-                    weight = 3, 
+                    fillColor = mapColPrep(selected.country),
                     stroke = F,
                     group = 'selectedColors',
                     label = mytext,
@@ -278,8 +237,6 @@ tag.map.title <- tags$style(HTML("
                     )
         )
     })
-    
-    
   }
 
 shinyApp(ui, server)
