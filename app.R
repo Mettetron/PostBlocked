@@ -107,8 +107,9 @@ ui <- fluidPage(
            selectizeInput("searched.country",  # selectizeInput makes writable and searchable dropdown menu
                           "Search country",
                           choices = all.countries, 
-                          selected = "none searched"
-           ), tableOutput('info_table')
+                          selected = "none searched"), 
+           downloadButton("downloadData", "Download Table"),
+           tableOutput('info_table')
     )
   ),
   
@@ -159,6 +160,12 @@ server <- function(input, output, session) {
     
     # table
     output$info_table <- renderTable(dfPrep(selected.country)) 
+    output$downloadData <- downloadHandler(
+      filename = paste0("PostBlocked_", selected.country, ".csv"),
+      content = function(file) {
+        write.csv(dfPrep(selected.country), file, row.names = FALSE)
+      }
+    )
     
     # plot
     leaflet(world) %>% 
@@ -207,6 +214,12 @@ server <- function(input, output, session) {
     
     # table
     output$info_table <- renderTable(dfPrep(selected.country)) 
+    output$downloadData <- downloadHandler(
+      filename = paste0("PostBlocked_", selected.country, ".csv"),
+      content = function(file) {
+        write.csv(dfPrep(selected.country), file, row.names = FALSE)
+      }
+    )
     
     # plot
     proxy <- leafletProxy("map")
@@ -246,6 +259,12 @@ server <- function(input, output, session) {
     
     # table
     output$info_table <- renderTable(dfPrep(selected.country)) 
+    output$downloadData <- downloadHandler(
+      filename = paste0("PostBlocked_", selected.country, ".csv"),
+      content = function(file) {
+        write.csv(dfPrep(selected.country), file, row.names = FALSE)
+      }
+    )
     
     # plot
     proxy <- leafletProxy("map")
