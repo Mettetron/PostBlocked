@@ -85,7 +85,7 @@ mytext <- world@data$covid_blocked_text %>%
 proj4string(world) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 # to use for countries in searchbar
-all.countries <- c(as.character(world@data$NAME_NEW), "none searched")
+all.countries <- c(sort(as.character(world@data$NAME_NEW)), "none searched")
 
 ui <- fluidPage(
   
