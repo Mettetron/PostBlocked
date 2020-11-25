@@ -6,13 +6,13 @@ library(leaflet)  # fancy interactive map
 
 # read in the map shapefile using the rgdal package. 
 world <- readOGR( 
-  dsn= paste0(getwd(),"/data_publish/ne_50m_admin_0_countries_namenew/") , 
+  dsn= paste0(getwd(),"/data/ne_50m_admin_0_countries_namenew/") , 
   layer="ne_50m_admin_0_countries_namenew",
   verbose=FALSE
 )
 
 # load postcrossing data
-pc.data <- read.csv("data_publish/postInfoScrape.csv")
+pc.data <- read.csv("data/postInfoScrape.csv")
 
 # Check for updates - and update if relevant
 pc.page <- read_html("https://www.postcrossing.com/postal-monitor")
@@ -20,10 +20,9 @@ pc.page <- read_html("https://www.postcrossing.com/postal-monitor")
 updated <- pc.page %>% html_nodes(".last:nth-child(5)") %>% html_text(trim = TRUE)
 if (updated != pc.data$updated[1]) {
   source("postInfoScrape.R")
+  # reload updated data
+  pc.data <- read.csv("data/postInfoScrape.csv")
 }
-
-# reload updated data
-pc.data <- read.csv("data_publish/postInfoScrape.csv")
 
 ## prepare for initial map
 # prepare variables to be used for coloring 
