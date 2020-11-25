@@ -1,7 +1,8 @@
 # load packages
-library(shiny)
-library(rgdal)
-library(leaflet)
+library(shiny)  
+library(rvest)  # website scrape
+library(rgdal)  # dealing with shapefiles
+library(leaflet)  # fancy interactive map
 
 # read in the map shapefile using the rgdal package. 
 world <- readOGR( 
@@ -11,6 +12,17 @@ world <- readOGR(
 )
 
 # load postcrossing data
+pc.data <- read.csv("data_publish/postInfoScrape.csv")
+
+# Check for updates - and update if relevant
+pc.page <- read_html("https://www.postcrossing.com/postal-monitor")
+# get date of update
+updated <- pc.page %>% html_nodes(".last:nth-child(5)") %>% html_text(trim = TRUE)
+if (updated != pc.data$updated[1]) {
+  source("postInfoScrape.R")
+}
+
+# reload updated data
 pc.data <- read.csv("data_publish/postInfoScrape.csv")
 
 ## prepare for initial map

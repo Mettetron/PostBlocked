@@ -87,8 +87,13 @@ accepted.exceptions <- c("Bonaire, Sint Eustatius and Saba", "Cape Verde", "Chri
                          "Svalbard and Jan Mayen","Tokelau", "Tuvalu","U.S. Minor Outlying Islands")
 sum(all.countries[!all.countries %in% world@data$NAME_NEW] %in% accepted.exceptions) == length(accepted.exceptions)
 
-# export
-write.csv(results, "data_publish/postInfoScrape.csv", fileEncoding = "UTF-8", row.names = FALSE)
+# export if no problems
+if (sum(all.countries[!all.countries %in% world@data$NAME_NEW] %in% accepted.exceptions) == length(accepted.exceptions)) {
+  write.csv(results, "data_publish/postInfoScrape.csv", fileEncoding = "UTF-8", row.names = FALSE)
+} else {
+  print("update failed")
+}
+
 
 
 
