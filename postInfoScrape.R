@@ -2,6 +2,8 @@
 library(tidyverse)
 library(rvest)
 library(rgdal)
+library(sendmailR)  # lets me know if data was updated
+
 ######## step 1 get info ###########
 # Webscraping https://towardsdatascience.com/web-scraping-tutorial-in-r-5e71fd107f32
 
@@ -90,8 +92,12 @@ sum(all.countries[!all.countries %in% world@data$NAME_NEW] %in% accepted.excepti
 # export if no problems
 if (sum(all.countries[!all.countries %in% world@data$NAME_NEW] %in% accepted.exceptions) == length(accepted.exceptions)) {
   write.csv(results, "data/postInfoScrape.csv", fileEncoding = "UTF-8", row.names = FALSE)
+  # notify me
+  msg <- paste("successfull update", results$updated[1])
+  sendmail(from="mettebusck@gmail.com", to="mettebusck@gmail.com", subject="postBlocked updated", msg=msg)
 } else {
-  print("update failed")
+  msg <- paste("failed", results$updated[1])
+  sendmail(from="mettebusck@gmail.com", to="mettebusck@gmail.com", subject="postBlocked failed update", msg=msg)
 }
 
 
