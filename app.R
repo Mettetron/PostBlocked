@@ -1,8 +1,13 @@
+# silence warnings
+oldw <- getOption("warn")
+options(warn = -1)
+
 # load packages
-library(shiny)  
-library(rvest)  # website scrape
-library(rgdal)  # dealing with shapefiles
-library(leaflet)  # fancy interactive map
+suppressMessages(library(shiny))  
+suppressMessages(library(rvest))  # website scrape
+suppressMessages(library(rgdal))  # dealing with shapefiles
+suppressMessages(library(leaflet))  # fancy interactive map
+
 
 # read in the map shapefile using the rgdal package. 
 world <- readOGR( 
@@ -159,6 +164,7 @@ server <- function(input, output, session) {
       point <- SpatialPoints(coords)
       proj4string(point) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
       selected.country <- world[point, ]@data$NAME_NEW
+      print(paste(selected.country, "geolocated"))
       output$country <- renderText({ 
         paste0("Where can't I send a postcard from ", selected.country, "?")
       })
@@ -217,6 +223,7 @@ server <- function(input, output, session) {
     proj4string(point) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
     
     selected.country <- world[point, ]@data$NAME_NEW
+    print(paste(selected.country, "clicked"))
     
     # title
     output$country <- renderText({ 
@@ -256,6 +263,7 @@ server <- function(input, output, session) {
   ## add different map on search
   observeEvent(input$searched.country, {
     selected.country <- input$searched.country
+    print(paste(selected.country, "searched"))
     
     if(selected.country == "none searched") {
       return()
@@ -297,5 +305,10 @@ server <- function(input, output, session) {
   })
 }
 
+# turn warnings back on
+options(warn = oldw)
+
 shinyApp(ui, server)
+
+
 

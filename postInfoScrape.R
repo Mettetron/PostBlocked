@@ -92,12 +92,14 @@ sum(all.countries[!all.countries %in% world@data$NAME_NEW] %in% accepted.excepti
 # export if no problems
 if (sum(all.countries[!all.countries %in% world@data$NAME_NEW] %in% accepted.exceptions) == length(accepted.exceptions)) {
   write.csv(results, "data/postInfoScrape.csv", fileEncoding = "UTF-8", row.names = FALSE)
-  # notify me
-  msg <- paste("successfull update", results$updated[1])
-  sendmail(from="mettebusck@gmail.com", to="mettebusck@gmail.com", subject="postBlocked updated", msg=msg)
-} else {
-  msg <- paste("failed", results$updated[1])
-  sendmail(from="mettebusck@gmail.com", to="mettebusck@gmail.com", subject="postBlocked failed update", msg=msg)
+  print(results[1, "updated"])
+  # # notify me - emailing might be causing problems
+  # msg <- paste("successfull update", results$updated[1])
+  # sendmail(from="mettebusck@gmail.com", to="mettebusck@gmail.com", subject="postBlocked updated", msg=msg)
+} else { # - emailing might be causing problems
+  print("bad update")
+  # msg <- paste("failed", results$updated[1])
+  # sendmail(from="mettebusck@gmail.com", to="mettebusck@gmail.com", subject="postBlocked failed update", msg=msg)
 }
 
 
