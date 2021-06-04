@@ -12,7 +12,7 @@
 
 
 ***Usage - Online***
-- Temporarily accesible [here](https://mettetron.shinyapps.io/PostBlockedv02/)
+- Temporarily accesible [here](https://mettetron.shinyapps.io/PostBlocked/)
 
 ***Usage - Local***
 - How to Clone  a GitHub Repo via URL: <br>
